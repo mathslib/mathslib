@@ -1,0 +1,11 @@
+[package]
+name = "mathslib"
+version = "0.1.0"
+edition = "2021"
+repository = "https://github.com/mathslib/mathslib"
+description = "A math library for Rust"
+license = "Apache-2.0"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
