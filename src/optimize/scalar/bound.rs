@@ -48,7 +48,6 @@ pub fn bound_minimize<T: Float + PartialOrd + Debug + FromPrimitive>(func: fn(T)
 			break
 		}
 		if func(c) < func(d) {
-			dbg!(&d);
 			x2 = d;
 		}
 		else {

@@ -54,7 +54,6 @@ impl<T: Float + PartialOrd + Debug> Bracket<T>{
 	pub fn longer_bound(&self, func: fn(T) -> T, ratio: T) -> Result<Bracket<T>, BracketError> {
 		let new_val = self.new_val(ratio);
 		let f_new_val = func(new_val);
-		dbg!(&new_val);
 
 		let new: Self;
 
