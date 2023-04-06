@@ -80,6 +80,10 @@ impl<T: Float + PartialOrd + Debug> Bracket<T>{
 		}
 		self.left + (self.center - self.left) / ratio
 	}
+
+	pub fn parabolic_interpolation(&self) -> T {
+		((self.right - self.center) * (self.center.powi(2) - self.left.powi(2)) + (self.f_left - self.f_center) * (self.right.powi(2) - self.center.powi(2)) ) / (T::from(2.0).unwrap() * ((self.f_right - self.f_center) * (self.center - self.left) + (self.f_left - self.f_center) * (self.right - self.center)))
+	}
 }
 
 #[derive(Error, Debug, Copy, Clone)]
@@ -185,4 +189,23 @@ pub fn bracket_minimize<T: Float + FromPrimitive + Signed + PartialOrd + Debug>(
 	}
 
 	Ok(bounds.center)
+}
+
+/// Perform parabolic interpolation over a bracket to find an approximation to the minimum.
+///
+/// # Example
+///
+/// ```
+/// use mathslib::optimize::scalar::bracket_optimizers::parabolic_interpolation;
+///
+/// fn case(x: f64) -> f64{
+///     x.powi(4) - 2.0 * x.powi(3) + 4.0
+/// }
+///
+/// assert_eq!(parabolic_interpolation(case, 0.5, 1.0, 2.0).unwrap(), 1.2142857142857142)
+///
+/// ```
+///
+pub fn parabolic_interpolation<T: Float + Debug>(func: fn(T) -> T, x1: T, x2: T, x3: T) -> Result<T, BracketError> {
+	Ok(Bracket::new(x1, x2, x3, func)?.parabolic_interpolation())
 }
