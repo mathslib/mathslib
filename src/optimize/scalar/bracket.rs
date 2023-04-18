@@ -4,7 +4,7 @@ use num_traits::{abs, Float, FromPrimitive, Pow, Signed};
 use thiserror::Error;
 
 #[derive(Debug, Copy, Clone)]
-pub struct Bracket<T: Float + PartialOrd + Debug> {
+struct Bracket<T: Float + PartialOrd + Debug> {
 	pub left: T,
 	pub f_left: T,
 	pub right: T,
@@ -51,29 +51,28 @@ impl<T: Float + PartialOrd + Debug> Bracket<T>{
 		})
 	}
 
-	pub fn longer_bound(&self, func: fn(T) -> T, ratio: T) -> Result<Bracket<T>, BracketError> {
-		let new_val = self.new_val(ratio);
+	pub fn longer_bound(&self, func: fn(T) -> T, new_val: T) -> Result<Bracket<T>, BracketError> {
 		let f_new_val = func(new_val);
 
 		let new: Self;
 
 		if (f_new_val < self.f_center) & (new_val < self.center){
-			new = Self::new(self.center, new_val, self.left, func)?;
+			new = Self::new_processed(self.left, self.f_left, new_val, f_new_val, self.center, self.f_center)?;
 		}
 		else if (f_new_val > self.f_center) & (new_val < self.center) {
-			new = Self::new(self.center, new_val, self.right, func)?;
+			new = Self::new_processed(new_val, f_new_val, self.center, self.f_center, self.right, self.f_right)?;
 		}
 		else if (f_new_val < self.f_center) & (new_val > self.center) {
-			new = Self::new(self.center, new_val, self.right, func)?;
+			new = Self::new_processed(self.center, self.f_center, new_val, f_new_val, self.right, self.f_right)?;
 		}
 		else{
-			new = Self::new(self.center, new_val, self.left, func)?;
+			new = Self::new_processed(self.left, self.f_left, self.center, self.f_center, new_val, f_new_val)?;
 		}
 
 		Ok(new)
 	}
 
-	pub fn new_val(&self, ratio: T) -> T{
+	pub fn new_val_from_ratio(&self, ratio: T) -> T{
 		if self.right - self.center > self.center - self.left {
 			return self.right - (self.right - self.center) / ratio
 		}
@@ -81,19 +80,20 @@ impl<T: Float + PartialOrd + Debug> Bracket<T>{
 	}
 
 	pub fn parabolic_interpolation(&self) -> T {
-		((self.right - self.center) * (self.center.powi(2) - self.left.powi(2)) + (self.f_left - self.f_center) * (self.right.powi(2) - self.center.powi(2)) ) / (T::from(2.0).unwrap() * ((self.f_right - self.f_center) * (self.center - self.left) + (self.f_left - self.f_center) * (self.right - self.center)))
+		((self.f_right - self.f_center) * (self.center.powi(2) - self.left.powi(2)) + (self.f_left - self.f_center) * (self.right.powi(2) - self.center.powi(2)) ) /
+			(T::from(2.0).unwrap() * ((self.f_right - self.f_center) * (self.center - self.left) + (self.f_left - self.f_center) * (self.right - self.center)))
 	}
 }
 
 #[derive(Error, Debug, Copy, Clone)]
-pub enum BracketOptimizerError {
+pub enum BracketRatioOptimizerError {
 	#[error("A bracket is invalid")]
 	BracketError{
 		#[from] source: BracketError
 	},
 	#[error("Invalid ratio, the ratio must be greater than 1 and smaller than 2")]
 	InvalidRatio,
-	#[error("Invalid tolerance must be greater than 1")]
+	#[error("Invalid tolerance must be greater than 0")]
 	InvalidTolerance
 }
 
@@ -119,19 +119,19 @@ pub enum BracketOptimizerError {
 /// 	assert_eq!(bracket_gr_minimize::<f64>(case_1, 4.0, -9.0, 1.0, 1e-4, 2000).unwrap().round_dp(4), -3.0000)
 ///}
 /// ```
-pub fn bracket_gr_minimize<T: Float + FromPrimitive + Signed+ PartialOrd + Debug>(func: fn(T) -> T, x1: T, x2: T, x3: T, tolerance: T, max_iter: u32) -> Result<T, BracketOptimizerError> {
-	bracket_minimize(func, x1, x2, x3, T::from_f64((5.0.pow(0.5) + 1.0) / 2.0).unwrap(), tolerance, max_iter)
+pub fn bracket_gr_minimize<T: Float + FromPrimitive + Signed+ PartialOrd + Debug>(func: fn(T) -> T, x1: T, x2: T, x3: T, tolerance: T, max_iter: u32) -> Result<T, BracketRatioOptimizerError> {
+	bracket_ratio_minimize(func, x1, x2, x3, T::from_f64((5.0.pow(0.5) + 1.0) / 2.0).unwrap(), tolerance, max_iter)
 }
 
 
-fn single_bracket_minimize<T: Float + PartialOrd + Debug + FromPrimitive>(func: fn(T) -> T, bounds: Bracket<T>, ratio: T) -> Result<Bracket<T>, BracketOptimizerError>{
+fn single_bracket_minimize<T: Float + PartialOrd + Debug + FromPrimitive>(func: fn(T) -> T, bounds: Bracket<T>, ratio: T) -> Result<Bracket<T>, BracketRatioOptimizerError>{
 	// Note this function will never return an invalid tolerance error. Typically, a different error struct would be generated but, because it is a private function, it should never impact the library user.
 
 	if ratio < T::from_f64(1.0).unwrap() {
-		return Err(BracketOptimizerError::InvalidRatio)
+		return Err(BracketRatioOptimizerError::InvalidRatio)
 	}
 
-	Ok(bounds.longer_bound(func, ratio)?)
+	Ok(bounds.longer_bound(func, bounds.new_val_from_ratio(ratio))?)
 }
 
 #[allow(dead_code)]
@@ -148,18 +148,18 @@ fn single_bracket_minimize<T: Float + PartialOrd + Debug + FromPrimitive>(func: 
 ///
 /// # Example
 /// ```
-/// use mathslib::optimize::scalar::bracket_optimizers::bracket_minimize;
+/// use mathslib::optimize::scalar::bracket_optimizers::bracket_ratio_minimize;
 /// use mathslib::generals::Decimal;
 ///
 /// fn case_1(x: f64) -> f64{x*x + 6.0*x + 3.0	}
 ///
 /// fn main() {
-/// 	assert_eq!(bracket_minimize::<f64>(case_1, 4.0, -9.0, 1.0, 1.5, 1e-4, 2000).unwrap().round_dp(4), -3.0000)
+/// 	assert_eq!(bracket_ratio_minimize::<f64>(case_1, 4.0, -9.0, 1.0, 1.5, 1e-4, 2000).unwrap().round_dp(4), -3.0000)
 ///}
 /// ```
-pub fn bracket_minimize<T: Float + FromPrimitive + Signed + PartialOrd + Debug>(func: fn(T) -> T, x1: T, x2: T, x3: T, ratio: T, tolerance: T, max_iter: u32) -> Result<T, BracketOptimizerError> {
+pub fn bracket_ratio_minimize<T: Float + FromPrimitive + Signed + PartialOrd + Debug>(func: fn(T) -> T, x1: T, x2: T, x3: T, ratio: T, tolerance: T, max_iter: u32) -> Result<T, BracketRatioOptimizerError> {
 	if tolerance < T::from_f64(0.0).unwrap() {
-		return Err(BracketOptimizerError::InvalidTolerance)
+		return Err(BracketRatioOptimizerError::InvalidTolerance)
 	}
 
 
@@ -174,7 +174,7 @@ pub fn bracket_minimize<T: Float + FromPrimitive + Signed + PartialOrd + Debug>(
 				match error {
 					// A duplicated value in the bracket typically means that we have reached the maximum level of precision posible by the previous iteration
 					// FIXME: Consider if this should return the error or assume it has converge to the best possible value it could
-					BracketOptimizerError::BracketError { .. } => {break}
+					BracketRatioOptimizerError::BracketError { .. } => {break}
 					_ => {return Err(*error)}
 				}
 			}
@@ -190,6 +190,7 @@ pub fn bracket_minimize<T: Float + FromPrimitive + Signed + PartialOrd + Debug>(
 	Ok(bounds.center)
 }
 
+#[allow(dead_code)]
 /// Perform parabolic interpolation over a bracket to find an approximation to the minimum.
 ///
 /// # Example
@@ -207,4 +208,70 @@ pub fn bracket_minimize<T: Float + FromPrimitive + Signed + PartialOrd + Debug>(
 ///
 pub fn parabolic_interpolation<T: Float + Debug>(func: fn(T) -> T, x1: T, x2: T, x3: T) -> Result<T, BracketError> {
 	Ok(Bracket::new(x1, x2, x3, func)?.parabolic_interpolation())
+}
+
+#[derive(Error, Debug, Copy, Clone)]
+pub enum BracketPIOptimizerError {
+	#[error("A bracket is invalid")]
+	BracketError {
+		#[from] source: BracketError
+	},
+	#[error("Invalid tolerance, must be greater than 0")]
+	InvalidTolerance,
+	#[error("Reached a dead end")]
+	DeadEnd
+}
+
+/// Perform parabolic interpolation until converging to a minima.
+///
+/// # Arguments
+/// * func: The function to be optimized
+/// * xi: The values forming the bracket
+/// * tolerance: The tolerance requirement to determine convergence
+/// * max_iter: The maximum number of iterations to loop over.
+///
+/// # Example
+/// ```
+/// 	use mathslib::optimize::scalar::bracket_optimizers::bracket_pi_minimize;
+/// 	use mathslib::generals::Decimal;
+/// 	use num_traits::Pow;
+///
+///     fn case_2(x: f64) -> f64 {
+/// 		x.pow(4) - 2.0 * x.pow(3) + 4.0
+/// 	}
+///
+///     fn main() {
+///
+/// 		assert_eq!(bracket_pi_minimize(case_2, 0.5, 1.0, 2.0, 1e-4, 5).unwrap().round_dp(6), 1.482046)
+///     }
+/// ```
+///
+pub fn bracket_pi_minimize<T: Float + Debug + FromPrimitive + Signed>(func: fn(T) -> T, x1: T, x2: T, x3: T, tolerance: T, max_iter: u32) -> Result<T, BracketPIOptimizerError> {
+	// Validate the tolerance
+	if tolerance < T::from_f64(0.0).unwrap() {
+		return Err(BracketPIOptimizerError::InvalidTolerance)
+	}
+
+	// Generate the initial bracket
+	let mut bounds = Bracket::new(x1, x2, x3, func)?;
+	let mut old_val: T = bounds.f_center + tolerance;
+
+	for _ in 0..max_iter {
+		 bounds = bounds.longer_bound(func, bounds.parabolic_interpolation())?;
+
+		/// Check if reached a dead end (Dead ends is when a bracket results in the same bracket
+		/// An example would be, given a bracket [(0, 6), (1, 4), (2, 6)] which results in the same bracket but not necessarily a minimum
+		if old_val == bounds.f_center{
+			return Err(BracketPIOptimizerError::DeadEnd)
+		}
+
+		if abs(old_val - bounds.f_center) < tolerance {
+			break
+		}
+
+
+		old_val = bounds.center
+	}
+
+	Ok(bounds.center)
 }

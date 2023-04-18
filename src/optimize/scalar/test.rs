@@ -2,7 +2,7 @@
 mod scalar_optimization {
 	use num_traits::Pow;
 	use crate::generals::Decimal;
-	use crate::optimize::scalar::bracket_optimizers::{bracket_gr_minimize, parabolic_interpolation};
+	use crate::optimize::scalar::bracket_optimizers::{bracket_gr_minimize, parabolic_interpolation, bracket_pi_minimize};
 	use crate::optimize::scalar::bound_optimizers::bound_gr_minimize;
 
 	fn case_1(x: f64) -> f64{x.pow(2) + 6.0*x + 3.0	}
@@ -31,6 +31,12 @@ mod scalar_optimization {
 
 	#[test]
 	fn parabolic_interpolation_case2() {
+		println!("{}", parabolic_interpolation(case_2, 1.0, 1.2142857142857, 2.0).unwrap());
 		assert_eq!(parabolic_interpolation(case_2, 0.5, 1.0, 2.0).unwrap().round_dp(6), 1.214286)
+	}
+
+	#[test]
+	fn pi_iterable_case2() {
+		assert_eq!(bracket_pi_minimize(case_2, 0.5, 1.0, 2.0, 1e-4, 5).unwrap().round_dp(6), 1.482046)
 	}
 }
