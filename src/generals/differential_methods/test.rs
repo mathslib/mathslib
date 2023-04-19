@@ -1,4 +1,3 @@
-use crate::generals::{binomial_coeff, factorial};
 use super::{forward_finite_difference, backwards_finite_difference, central_finite_difference};
 
 fn case1(x: f64) -> f64 {
