@@ -16,7 +16,16 @@ pub enum NewtonRaphsonError {
 }
 
 
-
+/// Use of the Newton Raphson method to find the root of the derivative of the function. This root will either be a minimum or a maximum.
+///
+/// NB: This function is an optimizer, not a solver.
+///
+/// # Arguments
+/// * func: The function to determine the turning point for
+/// * x0: The initial guess
+/// * tolerance: The tolerance requirement to determine convergence
+/// * max_iter: The maximum number of iterations to loop over.
+/// * h: The spacing of the bounds considered in the derivatives (A smaller value will give a more accurate result but caution must be taken to not loose resolution)
 fn newton_raphson<T: Float + Debug + AddAssign + FromPrimitive + num_traits::Signed>(func: fn(T) -> T, x0: T, tolerance: T, max_iter: u32, h: T) -> Result<T, NewtonRaphsonError> {
 	// Validate the tolerance
 	if tolerance < T::from_f64(0.0).unwrap() {
@@ -27,9 +36,6 @@ fn newton_raphson<T: Float + Debug + AddAssign + FromPrimitive + num_traits::Sig
 	let mut old_val: T = x0 + tolerance;
 
 	for _ in 0..max_iter {
-
-		// TODO: Create abstraction for higher order derivatives
-		// FIXME: The following unwrap must be handled in the above abstraction
 		x0 = x0 - central_finite_difference(func, x0, h, 1, 1)? / central_finite_difference(func, x0, h, 1, 2)?;
 
 		if abs(old_val - x0) < tolerance {
