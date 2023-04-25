@@ -1,4 +1,4 @@
-mod generals;
+pub mod generals;
 
 #[cfg(feature = "optimize")]
 mod optimize;
