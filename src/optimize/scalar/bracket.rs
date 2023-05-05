@@ -144,7 +144,7 @@ pub enum BracketRatioOptimizerError {
 /// It is recommended to use the [bound method](bound_gr_minimize) as it tends to converge faster than this method.
 ///
 /// # Arguments
-/// * func: Function to minimize
+/// * func: The objective function to minimize. The function, of the form f(x: T) -> T, must take in a single scalar value and return another.
 /// * xi: The three values characterizing the bracket
 /// * tolerance: The tolerance requirement to determine convergence
 /// * max_iter: The maximum number of iterations to loop over.
@@ -199,7 +199,7 @@ fn single_bracket_minimize<T: Float + PartialOrd + Debug + FromPrimitive>(
 /// It is recommended to use the [bound method](bound_minimize) as it tends to converge faster and is less error prone than this method.
 ///
 /// # Arguments
-/// * func: Function to minimize
+/// * func: The objective function to minimize. The function, of the form f(x: T) -> T, must take in a single scalar value and return another.
 /// * xi: The three values characterizing the bracket
 /// * ratio: The ratio around a bound to split around
 /// * tolerance: The tolerance requirement to determine convergence
@@ -296,7 +296,7 @@ pub enum BracketPIOptimizerError {
 /// Perform parabolic interpolation until converging to a minima.
 ///
 /// # Arguments
-/// * func: The function to be optimized
+/// * func: The objective function to minimize. The function, of the form f(x: T) -> T, must take in a single scalar value and return another.
 /// * xi: The values forming the bracket
 /// * tolerance: The tolerance requirement to determine convergence
 /// * max_iter: The maximum number of iterations to loop over.

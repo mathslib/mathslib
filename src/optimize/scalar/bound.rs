@@ -14,7 +14,7 @@ pub enum BoundOptimizerError {
 /// An iterative bound based approach for minimization of a function.
 ///
 /// # Arguments
-/// * func: Function to minimize
+/// * func: The objective function to minimize. The function, of the form f(x: T) -> T, must take in a single scalar value and return another.
 /// * xi: The two values characterizing the bound
 /// * ratio: The ratio around a bound to split around
 /// * tolerance: The tolerance requirement to determine convergence
@@ -70,7 +70,7 @@ pub fn bound_minimize<T: Float + PartialOrd + Debug + FromPrimitive>(
 /// An iterative bound based approach for minimization of a function using the golden ratio.
 ///
 /// # Arguments
-/// * func: Function to minimize
+/// * func: The objective function to minimize. The function, of the form f(x: T) -> T, must take in a single scalar value and return another.
 /// * xi: The two values characterizing the bound
 /// * tolerance: The tolerance requirement to determine convergence
 /// * max_iter: The maximum number of iterations to loop over.
