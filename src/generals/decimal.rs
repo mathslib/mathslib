@@ -11,8 +11,8 @@ pub trait Decimal {
 }
 
 impl<T: Float + PartialOrd + Debug + FromPrimitive> Decimal for T {
-	fn round_dp(&self, sf: i32) -> T{
-		let ten = T::from_f64(10.0).unwrap().powi(sf);
+	fn round_dp(&self, dp: i32) -> T{
+		let ten = T::from_f64(10.0).unwrap().powi(dp);
 		let a = *self * ten;
 		a.round() / ten
 	}
