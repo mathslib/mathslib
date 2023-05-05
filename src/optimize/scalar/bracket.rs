@@ -12,11 +12,16 @@ struct Bracket<T: Float + PartialOrd + Debug> {
     pub center: T,
     pub f_center: T,
 }
+#[derive(Debug, Copy, Clone)]
+pub enum Side{
+    Left,
+    Right
+}
 
 #[derive(Error, Debug, Copy, Clone)]
 pub enum BracketError {
     #[error("A bracket bound is duplicated and therefore a bracket would be invalid")]
-    DupeBoundForBracket,
+    DupeBoundForBracket(Side),
     #[error("The specified bracket does not encapsulate a dip. It might have a local minima within the bound but this is unknown")]
     BracketNotADip,
 }
@@ -45,9 +50,14 @@ impl<T: Float + PartialOrd + Debug> Bracket<T> {
         right: T,
         f_right: T,
     ) -> Result<Self, BracketError> {
-        if left == center || center == right {
-            return Err(BracketError::DupeBoundForBracket);
+        if left == center {
+            return Err(BracketError::DupeBoundForBracket(Side::Left));
         }
+
+        if center == right {
+            return Err(BracketError::DupeBoundForBracket(Side::Right));
+        }
+
 
         if !((f_center < f_left) && (f_center < f_right)) {
             return Err(BracketError::BracketNotADip);
