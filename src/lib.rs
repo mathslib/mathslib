@@ -1,10 +1,10 @@
-mod generals;
+pub mod generals;
 
 #[cfg(feature = "optimize")]
-mod optimize;
+pub mod optimize;
 
 #[cfg(feature = "solve")]
-mod solve;
+pub mod solve;
 
 #[cfg(feature = "stats")]
-mod stats;
+pub mod stats;
