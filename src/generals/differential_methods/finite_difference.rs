@@ -1,6 +1,6 @@
 use std::fmt::Debug;
-use std::ops::AddAssign;
-use num_traits::Float;
+use std::ops::{AddAssign, IndexMut};
+use num_traits::{Float, FromPrimitive};
 use crate::generals::{binomial_coeff, BinomialCoefficientError};
 use thiserror::Error;
 
@@ -40,7 +40,7 @@ pub enum FiniteDifferenceError {
 /// }
 /// ```
 ///
-pub fn forward_finite_difference<T: Float + Debug + AddAssign>(func: fn(T) -> T, x0:T,  h: T, n: u8) -> Result<T, FiniteDifferenceError> {
+pub fn forward_finite_difference<T: Float + Debug + AddAssign>(func: impl Fn(T) -> T, x0:T,  h: T, n: u8) -> Result<T, FiniteDifferenceError> {
 
 	if h < T::from(0).unwrap(){
 		return Err(FiniteDifferenceError::InvalidH)
@@ -78,7 +78,7 @@ pub fn forward_finite_difference<T: Float + Debug + AddAssign>(func: fn(T) -> T,
 /// }
 /// ```
 ///
-pub fn backwards_finite_difference<T: Float + Debug + AddAssign>(func: fn(T) -> T, x0: T, h: T, n: u8) -> Result<T, FiniteDifferenceError> {
+pub fn backwards_finite_difference<T: Float + Debug + AddAssign>(func: impl Fn(T) -> T, x0: T, h: T, n: u8) -> Result<T, FiniteDifferenceError> {
 
 	if h < T::from(0).unwrap(){
 		return Err(FiniteDifferenceError::InvalidH)
@@ -116,7 +116,7 @@ pub fn backwards_finite_difference<T: Float + Debug + AddAssign>(func: fn(T) -> 
 /// }
 /// ```
 ///
-pub fn central_finite_difference<T: Float + Debug + AddAssign>(func: fn(T) -> T, x0: T, h: T, n: u8) -> Result<T, FiniteDifferenceError> {
+pub fn central_finite_difference<T: Float + Debug + AddAssign>(mut func: impl FnMut(T) -> T, x0: T, h: T, n: u8) -> Result<T, FiniteDifferenceError> {
 
 	if h < T::from(0).unwrap(){
 		return Err(FiniteDifferenceError::InvalidH)
@@ -129,4 +129,20 @@ pub fn central_finite_difference<T: Float + Debug + AddAssign>(func: fn(T) -> T,
 	}
 
 	Ok(total/h)
+}
+
+fn mod_index<T: Float + Debug + FromPrimitive, const LENGTH: usize>(x: &mut [T; LENGTH], index: usize, val: T) -> &[T; LENGTH] {
+	x[index] = val;
+	x
+}
+
+pub fn multivariate_central_finite_difference<T: Float + Debug + FromPrimitive + AddAssign, const LENGTH: usize>(func: fn([T; LENGTH]) -> T, x: [T; LENGTH], h: [T; LENGTH], n: u8) -> Result<[T; LENGTH], FiniteDifferenceError> {
+	let mut results: [T; LENGTH] = [T::from(0).unwrap(); LENGTH];
+
+	for i in 0..LENGTH {
+		let mut input = x;
+		results[i] = central_finite_difference(|xi| func(*mod_index(&mut input, i, xi)), x[0], h[0], n)?;
+	}
+
+	Ok(results)
 }

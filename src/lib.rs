@@ -1,6 +1,6 @@
 pub mod generals;
 
-#[cfg(feature = "optimize")]
+// #[cfg(feature = "optimize")]
 mod optimize;
 
 #[cfg(feature = "solve")]
